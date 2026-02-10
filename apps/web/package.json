@@ -1,13 +1,14 @@
 {
-  "name": "web",
+  "name": "@mass/web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "test": "echo \"no tests yet\""
   },
   "dependencies": {
     "react": "^19.2.0",
