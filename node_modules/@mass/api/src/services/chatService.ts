@@ -57,6 +57,19 @@ export const chatService = {
     };
   },
 
+  async *handleIncomingMessageStream(payload: IncomingMessagePayload) {
+    const result = await this.handleIncomingMessage(payload);
+
+    const fullText =
+      result.messages.find((m) => m.role === 'AGENT')?.content ?? '';
+
+    const tokens = fullText.split(' ');
+    for (const token of tokens) {
+      yield token + ' ';
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+  },
+
   async listConversations({ userId }: { userId: string }) {
     return prisma.conversation.findMany({
       where: { userId },
