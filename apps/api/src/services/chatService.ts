@@ -63,9 +63,19 @@ export const chatService = {
     const fullText =
       result.messages.find((m) => m.role === 'AGENT')?.content ?? '';
 
+    // First yield metadata so the client knows conversation & agent
+    yield {
+      type: 'meta' as const,
+      conversationId: result.conversationId,
+      agentType: result.agentType,
+    };
+
     const tokens = fullText.split(' ');
     for (const token of tokens) {
-      yield token + ' ';
+      yield {
+        type: 'delta' as const,
+        delta: `${token} `,
+      };
       await new Promise((resolve) => setTimeout(resolve, 40));
     }
   },

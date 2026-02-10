@@ -3,7 +3,7 @@ import './index.css';
 import {
   type Conversation,
   type Message,
-  sendMessage,
+  sendMessageStream,
   listConversations,
   getConversation,
 } from './api/chat';
@@ -37,25 +37,82 @@ function App() {
     if (!input.trim()) return;
     setIsSending(true);
     try {
-      const res = await sendMessage({
+      const createdAt = new Date().toISOString();
+
+      // Optimistically add user message
+      const userMessage: Message = {
+        id: `temp-user-${createdAt}`,
+        conversationId: activeConversationId ?? 'pending',
+        role: 'USER',
         content: input,
-        conversationId: activeConversationId ?? undefined,
+        createdAt,
+        agentType: null,
+      };
+
+      // Placeholder agent message that we'll stream into
+      const agentMessage: Message = {
+        id: `temp-agent-${createdAt}`,
+        conversationId: activeConversationId ?? 'pending',
+        role: 'AGENT',
+        content: '',
+        createdAt,
+        agentType: null,
+      };
+
+      setMessages((prev) => [...prev, userMessage, agentMessage]);
+
+      let latestConversationId = activeConversationId ?? null;
+      let latestAgentType: Message['agentType'] = null;
+
+      await sendMessageStream(
+        {
+          content: input,
+          conversationId: activeConversationId ?? undefined,
+        },
+        {
+          onToken: (chunk) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === agentMessage.id
+                  ? { ...m, content: (m.content ?? '') + chunk }
+                  : m,
+              ),
+            );
+          },
+        },
+      ).then((meta) => {
+        latestConversationId = meta.conversationId;
+        latestAgentType = meta.agentType;
       });
 
-      setActiveConversationId(res.conversationId);
-      setMessages((prev) => [...prev, ...res.messages]);
-
-      if (!conversations.find((c) => c.id === res.conversationId)) {
-        const updated = await listConversations();
-        setConversations(updated);
-      } else {
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === res.conversationId
-              ? { ...c, updatedAt: new Date().toISOString(), title: c.title }
-              : c,
+      if (latestConversationId) {
+        setActiveConversationId(latestConversationId);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === agentMessage.id
+              ? {
+                  ...m,
+                  conversationId: latestConversationId!,
+                  agentType: latestAgentType,
+                }
+              : m.id === userMessage.id
+              ? { ...m, conversationId: latestConversationId! }
+              : m,
           ),
         );
+
+        if (!conversations.find((c) => c.id === latestConversationId)) {
+          const updated = await listConversations();
+          setConversations(updated);
+        } else {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === latestConversationId
+                ? { ...c, updatedAt: new Date().toISOString(), title: c.title }
+                : c,
+            ),
+          );
+        }
       }
     } finally {
       setIsSending(false);
