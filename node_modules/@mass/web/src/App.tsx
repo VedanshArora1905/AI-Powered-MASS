@@ -3,9 +3,11 @@ import './index.css';
 import {
   type Conversation,
   type Message,
+  type AgentInfo,
   sendMessageStream,
   listConversations,
   getConversation,
+  listAgents,
 } from './api/chat';
 
 function App() {
@@ -14,6 +16,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [agents, setAgents] = useState<AgentInfo[]>([]);
 
   useEffect(() => {
     void (async () => {
@@ -22,6 +25,8 @@ function App() {
       if (data.length && !activeConversationId) {
         setActiveConversationId(data[0].id);
       }
+      const agentsData = await listAgents();
+      setAgents(agentsData);
     })();
   }, []);
 
@@ -156,6 +161,31 @@ function App() {
             {!conversations.length && (
               <p className="empty-state">No conversations yet. Start by sending a message.</p>
             )}
+          </div>
+        </div>
+        <div className="sidebar-section agents-section">
+          <h2>Agents</h2>
+          <div className="agent-list">
+            {agents.map((agent) => (
+              <div key={agent.type} className="agent-card">
+                <div className="agent-header">
+                  <span className="agent-name">{agent.name}</span>
+                  <span className="agent-type-pill">
+                    {typeof agent.type === 'string'
+                      ? agent.type.toString().toUpperCase()
+                      : agent.type}
+                  </span>
+                </div>
+                <p className="agent-description">{agent.description}</p>
+                <div className="agent-tools">
+                  {agent.tools.map((tool) => (
+                    <span key={tool} className="agent-tool-pill">
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </aside>

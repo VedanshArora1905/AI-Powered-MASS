@@ -9,21 +9,21 @@ export const chatController = {
   },
 
   async listConversations(c: Context) {
-    const userId = c.req.query('userId') ?? 'demo-user';
+    const userId = c.req.query('userId') ?? undefined;
     const conversations = await chatService.listConversations({ userId });
     return c.json(conversations);
   },
 
   async getConversation(c: Context) {
     const id = c.req.param('id');
-    const userId = c.req.query('userId') ?? 'demo-user';
+    const userId = c.req.query('userId') ?? undefined;
     const conversation = await chatService.getConversation({ id, userId });
     return c.json(conversation);
   },
 
   async deleteConversation(c: Context) {
     const id = c.req.param('id');
-    const userId = c.req.query('userId') ?? 'demo-user';
+    const userId = c.req.query('userId') ?? undefined;
     await chatService.deleteConversation({ id, userId });
     return c.json({ success: true });
   },

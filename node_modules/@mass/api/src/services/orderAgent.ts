@@ -1,6 +1,7 @@
 import type { AgentType } from '@mass/db';
 import { prisma } from '@mass/db';
 import type { Message } from '@mass/db';
+import { getConversationContext } from './contextService';
 
 type AgentHandleInput = {
   userId: string;
@@ -11,6 +12,11 @@ type AgentHandleInput = {
 export const orderAgent = {
   async handle(input: AgentHandleInput): Promise<{ agentType: AgentType; reply: string }> {
     const text = input.latestUserMessage.content;
+
+    // Compact context, primarily for future LLM usage or richer heuristics
+    const context = await getConversationContext(input.conversationId, {
+      maxMessages: 10,
+    });
 
     // Tool: fetch order details, check delivery status
     const externalIdMatch = text.match(/ORD-\d+/i);
@@ -35,7 +41,8 @@ export const orderAgent = {
 
     const [order] = orders;
 
-    const reply = `Order Agent: Order ${order.externalId} is currently ${order.status} with delivery status ${order.deliveryStatus}. Total amount: ${order.totalAmount} ${order.currency}.`;
+    const reply = `Order Agent: Order ${order.externalId} is currently ${order.status} with delivery status ${order.deliveryStatus}. Total amount: ${order.totalAmount} ${order.currency}.`
+      + (context.truncated ? ` (Using recent context only: ${context.summary})` : '');
 
     return {
       agentType: 'ORDER',

@@ -80,16 +80,18 @@ export const chatService = {
     }
   },
 
-  async listConversations({ userId }: { userId: string }) {
+  async listConversations(_args?: { userId?: string }) {
+    const user = await ensureDemoUser();
     return prisma.conversation.findMany({
-      where: { userId },
+      where: { userId: user.id },
       orderBy: { updatedAt: 'desc' },
     });
   },
 
-  async getConversation({ id, userId }: { id: string; userId: string }) {
+  async getConversation({ id }: { id: string; userId?: string }) {
+    const user = await ensureDemoUser();
     return prisma.conversation.findFirstOrThrow({
-      where: { id, userId },
+      where: { id, userId: user.id },
       include: {
         messages: {
           orderBy: { createdAt: 'asc' },
@@ -98,9 +100,10 @@ export const chatService = {
     });
   },
 
-  async deleteConversation({ id, userId }: { id: string; userId: string }) {
+  async deleteConversation({ id }: { id: string; userId?: string }) {
+    const user = await ensureDemoUser();
     await prisma.conversation.delete({
-      where: { id, userId },
+      where: { id, userId: user.id },
     });
   },
 };

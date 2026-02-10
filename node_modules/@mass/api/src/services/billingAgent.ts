@@ -1,6 +1,7 @@
 import type { AgentType } from '@mass/db';
 import { prisma } from '@mass/db';
 import type { Message } from '@mass/db';
+import { getConversationContext } from './contextService';
 
 type AgentHandleInput = {
   userId: string;
@@ -11,6 +12,10 @@ type AgentHandleInput = {
 export const billingAgent = {
   async handle(input: AgentHandleInput): Promise<{ agentType: AgentType; reply: string }> {
     const text = input.latestUserMessage.content;
+
+    const context = await getConversationContext(input.conversationId, {
+      maxMessages: 10,
+    });
 
     const externalIdMatch = text.match(/ORD-\d+/i);
     const externalId = externalIdMatch?.[0].toUpperCase();
@@ -45,7 +50,8 @@ export const billingAgent = {
       };
     }
 
-    const reply = `Billing Agent: For order ${order.externalId}, the latest payment of ${latestPayment.amount} ${latestPayment.currency} is ${latestPayment.status} with refund status ${latestPayment.refundStatus}.`;
+    const reply = `Billing Agent: For order ${order.externalId}, the latest payment of ${latestPayment.amount} ${latestPayment.currency} is ${latestPayment.status} with refund status ${latestPayment.refundStatus}.`
+      + (context.truncated ? ` (Using recent context only: ${context.summary})` : '');
 
     return {
       agentType: 'BILLING',

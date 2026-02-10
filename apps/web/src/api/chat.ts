@@ -24,6 +24,13 @@ export type ChatResponse = {
   agentType: AgentType;
 };
 
+export type AgentInfo = {
+  type: AgentType | 'router';
+  name: string;
+  description: string;
+  tools: string[];
+};
+
 type StreamEvent =
   | { type: 'meta'; conversationId: string; agentType: AgentType }
   | { type: 'delta'; delta: string };
@@ -43,6 +50,14 @@ export async function sendMessage(input: {
     throw new Error('Failed to send message');
   }
 
+  return res.json();
+}
+
+export async function listAgents(): Promise<AgentInfo[]> {
+  const res = await fetch(`${API_BASE}/api/agents`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch agents');
+  }
   return res.json();
 }
 
